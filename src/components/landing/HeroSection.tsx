@@ -1,8 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
+  // Check if user is already logged in
+  const isLoggedIn = localStorage.getItem('isAuthenticated') === 'true';
+  
   return (
     <div className="flex flex-col items-center text-center py-16 md:py-24 px-4 animate-fade-in">
       <div className="text-5xl md:text-7xl mb-4">🚀</div>
@@ -14,7 +16,9 @@ export const HeroSection = () => {
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
         <Button asChild size="lg" className="px-8">
-          <Link to="/dashboard">Get Started</Link>
+          <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+            {isLoggedIn ? "Go to Dashboard" : "Get Started"}
+          </Link>
         </Button>
         <Button asChild variant="outline" size="lg">
           <a href="#features">Learn more</a>

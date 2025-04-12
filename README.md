@@ -59,6 +59,49 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (for backend and authentication)
+
+## Setting up Supabase
+
+This project uses Supabase for backend functionality. Follow these steps to set up your Supabase project:
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project and note down your project URL and anon key
+3. Copy the `.env.example` file to `.env` in the root directory
+4. Update the `.env` file with your Supabase URL and anon key:
+   ```
+   VITE_SUPABASE_URL=your_supabase_url_here
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+   ```
+5. Set up your database tables in the Supabase dashboard:
+   - Create a `projects` table with the following columns:
+     - `id` (uuid, primary key)
+     - `title` (text)
+     - `description` (text)
+     - `status` (text)
+     - `priority` (text)
+     - `tech_stack` (array)
+     - `github_url` (text, nullable)
+     - `deployment_url` (text, nullable)
+     - `created_at` (timestamp with timezone)
+     - `updated_at` (timestamp with timezone)
+     - `user_id` (uuid, foreign key to auth.users)
+   - Create a `tasks` table with the following columns:
+     - `id` (uuid, primary key)
+     - `title` (text)
+     - `description` (text, nullable)
+     - `completed` (boolean)
+     - `due_date` (timestamp with timezone, nullable)
+     - `created_at` (timestamp with timezone)
+     - `project_id` (uuid, foreign key to projects.id)
+   - Create a `profiles` table with the following columns:
+     - `id` (uuid, primary key, references auth.users.id)
+     - `email` (text)
+     - `full_name` (text, nullable)
+     - `avatar_url` (text, nullable)
+     - `created_at` (timestamp with timezone)
+
+6. Set up Row Level Security (RLS) policies for your tables to secure your data
 
 ## How can I deploy this project?
 

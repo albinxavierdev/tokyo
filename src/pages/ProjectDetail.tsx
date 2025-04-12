@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getProjectById, statusOptions, priorityOptions } from "@/lib/mock-data";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { statusOptions, priorityOptions } from "@/lib/mock-data";
 import { Project, Task } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +13,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   CalendarDays,
   ExternalLink,
   Github,
   Trash,
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+  Globe,
 } from "lucide-react";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import { ProjectPriorityBadge } from "@/components/projects/ProjectPriorityBadge";
@@ -28,25 +43,134 @@ import Navbar from "@/components/layout/Navbar";
 import PageContainer from "@/components/layout/PageContainer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Footer from "@/components/layout/Footer";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
+import { fetchProjectById, updateProject, deleteProject, createTask, updateTask, deleteTask } from "@/lib/api";
+import { v4 as uuidv4 } from 'uuid';
 
 const ProjectDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // For tech stack input
   const [newTech, setNewTech] = useState("");
 
+  // User ID handling
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [userId, setUserId] = useState<string>('');
+  
+  useEffect(() => {
+    // Generate a valid UUID if one doesn't exist
+    const validUserId = user.id && typeof user.id === 'string' && user.id.includes('-') 
+      ? user.id 
+      : uuidv4();
+    
+    // Store the UUID back in localStorage if we generated a new one
+    if (!user.id || !user.id.includes('-')) {
+      const updatedUser = {
+        ...user,
+        id: validUserId
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+    
+    setUserId(validUserId);
+  }, [user]);
+
   // Load project data
   useEffect(() => {
-    if (!id) return;
+    const loadProject = async () => {
+      if (!id) return;
+      
+      setLoading(true);
+      try {
+        const projectData = await fetchProjectById(id);
+        
+        if (!projectData) {
+          console.error("Project not found");
+          setProject(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Convert from Supabase format to our app format
+        const formattedProject: Project = {
+          id: projectData.id,
+          title: projectData.title,
+          description: projectData.description || "",
+          status: projectData.status,
+          priority: projectData.priority,
+          techStack: projectData.tech_stack || [],
+          githubUrl: projectData.github_url || "",
+          deploymentUrl: projectData.deployment_url || "",
+          tasks: Array.isArray(projectData.tasks) 
+            ? projectData.tasks.map((task: any) => ({
+                id: task.id,
+                title: task.title,
+                description: task.description || "",
+                completed: task.completed || false,
+                dueDate: task.due_date || null,
+                createdAt: task.created_at
+              })) 
+            : [],
+          createdAt: projectData.created_at,
+          updatedAt: projectData.updated_at
+        };
+        
+        setProject(formattedProject);
+      } catch (error) {
+        console.error("Error loading project:", error);
+        toast({
+          title: "Error loading project",
+          description: "Could not load the project. Please try again later.",
+          variant: "destructive",
+        });
+        setProject(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProject();
+  }, [id, toast]);
+
+  const handleDeleteProjectClick = async () => {
+    if (!project) return;
     
-    const projectData = getProjectById(id);
-    if (projectData) {
-      setProject(projectData);
+    try {
+      await deleteProject(project.id);
+      toast({
+        title: "Project deleted",
+        description: "Your project has been deleted successfully.",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Error deleting project",
+        description: "Could not delete the project. Please try again later.",
+        variant: "destructive",
+      });
     }
-  }, [id]);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <PageContainer className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p>Loading project...</p>
+          </div>
+        </PageContainer>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -69,17 +193,62 @@ const ProjectDetail = () => {
   }
 
   // Update project field handler
-  const handleUpdateField = (field: keyof Project, value: any) => {
+  const handleUpdateField = async (field: keyof Project, value: any) => {
+    // Update local state immediately for responsive UI
     setProject({
       ...project,
       [field]: value,
       updatedAt: new Date().toISOString(),
     });
     
-    toast({
-      title: "Project updated",
-      description: "Your changes have been saved automatically.",
-    });
+    // Save to Supabase
+    setSaving(true);
+    try {
+      // Prepare data for Supabase format
+      const updates: any = { 
+        updated_at: new Date().toISOString() 
+      };
+      
+      // Map the field name to Supabase column name
+      switch (field) {
+        case 'title':
+        case 'description':
+        case 'status':
+        case 'priority':
+          updates[field] = value;
+          break;
+        case 'techStack':
+          updates.tech_stack = value;
+          break;
+        case 'githubUrl':
+          updates.github_url = value;
+          break;
+        case 'deploymentUrl':
+          updates.deployment_url = value;
+          break;
+        default:
+          // Don't sync fields like 'tasks' directly
+          break;
+      }
+      
+      await updateProject(project.id, updates);
+      
+      toast({
+        title: "Project updated",
+        description: "Your changes have been saved.",
+      });
+    } catch (error) {
+      console.error("Error updating project:", error);
+      toast({
+        title: "Error saving changes",
+        description: "Could not save your changes. Please try again later.",
+        variant: "destructive",
+      });
+      
+      // Optionally revert the local state change on error
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Add tech stack item
@@ -98,30 +267,112 @@ const ProjectDetail = () => {
   };
 
   // Add a new task
-  const handleAddTask = (title: string) => {
-    const newTask: Task = {
-      id: `t${Date.now()}`,
-      title,
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const updatedTasks = [...project.tasks, newTask];
-    handleUpdateField("tasks", updatedTasks);
+  const handleAddTask = async (title: string) => {
+    try {
+      const newTaskData = await createTask(
+        {
+          title,
+          completed: false
+        },
+        project.id
+      );
+      
+      // Format the new task to match our app's format
+      const newTask: Task = {
+        id: newTaskData.id,
+        title: newTaskData.title,
+        description: newTaskData.description,
+        completed: newTaskData.completed,
+        dueDate: newTaskData.due_date,
+        createdAt: newTaskData.created_at
+      };
+      
+      // Update local state
+      setProject({
+        ...project,
+        tasks: [...project.tasks, newTask],
+        updatedAt: new Date().toISOString(),
+      });
+      
+      toast({
+        title: "Task added",
+        description: "Your new task has been added successfully.",
+      });
+    } catch (error) {
+      console.error("Error adding task:", error);
+      toast({
+        title: "Error adding task",
+        description: "Could not add the task. Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Toggle task completion
-  const handleToggleTask = (taskId: string, completed: boolean) => {
+  const handleToggleTask = async (taskId: string, completed: boolean) => {
+    // Update local state immediately for responsive UI
     const updatedTasks = project.tasks.map((task) =>
       task.id === taskId ? { ...task, completed } : task
     );
-    handleUpdateField("tasks", updatedTasks);
+    
+    setProject({
+      ...project,
+      tasks: updatedTasks,
+      updatedAt: new Date().toISOString(),
+    });
+    
+    // Save to Supabase
+    try {
+      await updateTask(taskId, { completed });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast({
+        title: "Error updating task",
+        description: "Could not update the task status. Please try again later.",
+        variant: "destructive",
+      });
+      
+      // Revert local state on error
+      setProject({
+        ...project,
+        updatedAt: new Date().toISOString(),
+      });
+    }
   };
 
   // Delete a task
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
+    // Update local state immediately for responsive UI
     const updatedTasks = project.tasks.filter((task) => task.id !== taskId);
-    handleUpdateField("tasks", updatedTasks);
+    
+    setProject({
+      ...project,
+      tasks: updatedTasks,
+      updatedAt: new Date().toISOString(),
+    });
+    
+    // Delete from Supabase
+    try {
+      await deleteTask(taskId);
+      
+      toast({
+        title: "Task deleted",
+        description: "The task has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Error deleting task",
+        description: "Could not delete the task. Please try again later.",
+        variant: "destructive",
+      });
+      
+      // Revert local state on error
+      setProject({
+        ...project,
+        updatedAt: new Date().toISOString(),
+      });
+    }
   };
 
   return (
@@ -152,10 +403,29 @@ const ProjectDetail = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button variant="destructive" size="sm">
-                <Trash size={16} className="mr-1" />
-                Delete
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash size={16} className="mr-1" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your project
+                      and all associated tasks.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteProjectClick}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
@@ -272,54 +542,61 @@ const ProjectDetail = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    <Github size={16} className="inline mr-1" />
+                  <h4 className="text-sm font-medium mb-2">
+                    <Github size={14} className="inline mr-1" />
                     GitHub Repository
-                  </label>
+                  </h4>
                   <Input
                     value={project.githubUrl || ""}
                     onChange={(e) => handleUpdateField("githubUrl", e.target.value)}
-                    placeholder="https://github.com/user/repo"
+                    placeholder="https://github.com/username/repo"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    <ExternalLink size={16} className="inline mr-1" />
+                  <h4 className="text-sm font-medium mb-2">
+                    <ExternalLink size={14} className="inline mr-1" />
                     Deployment URL
-                  </label>
+                  </h4>
                   <Input
                     value={project.deploymentUrl || ""}
                     onChange={(e) => handleUpdateField("deploymentUrl", e.target.value)}
-                    placeholder="https://example.com"
+                    placeholder="https://your-project.com"
                   />
                 </div>
-                
-                {project.githubUrl && (
-                  <a
-                    href={project.githubUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center text-sm text-accent hover:underline"
-                  >
-                    <Github size={16} className="mr-1" />
-                    View on GitHub
-                    <ExternalLink size={12} className="ml-1" />
-                  </a>
-                )}
-                
-                {project.deploymentUrl && (
-                  <a
-                    href={project.deploymentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center text-sm text-accent hover:underline"
-                  >
-                    <ExternalLink size={16} className="mr-1" />
-                    Visit Deployment
-                    <ExternalLink size={12} className="ml-1" />
-                  </a>
-                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <h3 className="font-semibold">Project Statistics</h3>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Total Tasks</span>
+                    <span className="font-medium">{project.tasks.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Completed Tasks</span>
+                    <span className="font-medium">
+                      {project.tasks.filter((task) => task.completed).length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Progress</span>
+                    <span className="font-medium">
+                      {project.tasks.length > 0
+                        ? Math.round(
+                            (project.tasks.filter((task) => task.completed).length /
+                              project.tasks.length) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -1,9 +1,11 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Home, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useEffect } from "react";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,15 +76,65 @@ const MobileNavLink = ({ to, icon, label, onClick }: { to: string, icon: React.R
 );
 
 const AuthButton = ({ isMobile = false }: { isMobile?: boolean }) => {
-  // This is a placeholder for the authentication button
-  // In a real app, this would check if the user is logged in
-  const isLoggedIn = true;
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
+    };
+    
+    checkAuth();
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAuthAction = async () => {
+    if (isLoggedIn) {
+      // Handle logout with Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Error",
+          description: "Failed to sign out. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Clear user data in localStorage
+      localStorage.removeItem('user');
+      
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+      
+      navigate('/');
+    } else {
+      // Handle login
+      navigate('/login');
+    }
+  };
 
   return (
     <Button 
       variant={isLoggedIn ? "outline" : "default"} 
       size="sm"
       className={cn(isMobile && "w-full justify-start")}
+      onClick={handleAuthAction}
     >
       {isLoggedIn ? (
         <>

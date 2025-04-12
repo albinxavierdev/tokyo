@@ -1,8 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export const CtaSection = () => {
+  // Check if user is already logged in
+  const isLoggedIn = localStorage.getItem('isAuthenticated') === 'true';
+  
   return (
     <section className="py-16 md:py-24 px-4 bg-accent/5 border-y border-border">
       <div className="container max-w-4xl mx-auto text-center">
@@ -11,7 +13,9 @@ export const CtaSection = () => {
           Start tracking your projects today and focus on what matters most — building great products.
         </p>
         <Button asChild size="lg" className="px-8">
-          <Link to="/dashboard">Get Started Now</Link>
+          <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+            {isLoggedIn ? "Go to Dashboard" : "Get Started Now"}
+          </Link>
         </Button>
       </div>
     </section>
