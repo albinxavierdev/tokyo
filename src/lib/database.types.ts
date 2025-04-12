@@ -22,6 +22,10 @@ export type Database = {
           created_at: string;
           updated_at: string;
           user_id: string;
+          github_repo_owner: string | null;
+          github_repo_name: string | null;
+          github_webhook_id: number | null;
+          github_sync_enabled: boolean | null;
         };
         Insert: {
           id?: string;
@@ -35,6 +39,10 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           user_id: string;
+          github_repo_owner?: string | null;
+          github_repo_name?: string | null;
+          github_webhook_id?: number | null;
+          github_sync_enabled?: boolean | null;
         };
         Update: {
           id?: string;
@@ -48,6 +56,10 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           user_id?: string;
+          github_repo_owner?: string | null;
+          github_repo_name?: string | null;
+          github_webhook_id?: number | null;
+          github_sync_enabled?: boolean | null;
         };
       };
       tasks: {
@@ -59,6 +71,9 @@ export type Database = {
           due_date: string | null;
           created_at: string;
           project_id: string;
+          github_issue_url: string | null;
+          github_issue_number: number | null;
+          github_sync_enabled: boolean | null;
         };
         Insert: {
           id?: string;
@@ -68,6 +83,9 @@ export type Database = {
           due_date?: string | null;
           created_at?: string;
           project_id: string;
+          github_issue_url?: string | null;
+          github_issue_number?: number | null;
+          github_sync_enabled?: boolean | null;
         };
         Update: {
           id?: string;
@@ -77,6 +95,9 @@ export type Database = {
           due_date?: string | null;
           created_at?: string;
           project_id?: string;
+          github_issue_url?: string | null;
+          github_issue_number?: number | null;
+          github_sync_enabled?: boolean | null;
         };
       };
       profiles: {

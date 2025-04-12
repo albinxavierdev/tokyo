@@ -46,6 +46,7 @@ import Footer from "@/components/layout/Footer";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchProjectById, updateProject, deleteProject, createTask, updateTask, deleteTask } from "@/lib/api";
 import { v4 as uuidv4 } from 'uuid';
+import GitHubIssuesList from "@/components/github/GitHubIssuesList";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +83,7 @@ const ProjectDetail = () => {
 
   // Load project data
   useEffect(() => {
-    const loadProject = async () => {
+    const loadProjectData = async () => {
       if (!id) return;
       
       setLoading(true);
@@ -106,6 +107,10 @@ const ProjectDetail = () => {
           techStack: projectData.tech_stack || [],
           githubUrl: projectData.github_url || "",
           deploymentUrl: projectData.deployment_url || "",
+          githubRepoOwner: projectData.github_repo_owner || "",
+          githubRepoName: projectData.github_repo_name || "",
+          githubWebhookId: projectData.github_webhook_id || null,
+          githubSyncEnabled: projectData.github_sync_enabled || false,
           tasks: Array.isArray(projectData.tasks) 
             ? projectData.tasks.map((task: any) => ({
                 id: task.id,
@@ -113,7 +118,10 @@ const ProjectDetail = () => {
                 description: task.description || "",
                 completed: task.completed || false,
                 dueDate: task.due_date || null,
-                createdAt: task.created_at
+                createdAt: task.created_at,
+                githubIssueUrl: task.github_issue_url || null,
+                githubIssueNumber: task.github_issue_number || null,
+                githubSyncEnabled: task.github_sync_enabled || false,
               })) 
             : [],
           createdAt: projectData.created_at,
@@ -134,8 +142,66 @@ const ProjectDetail = () => {
       }
     };
 
-    loadProject();
+    loadProjectData();
   }, [id, toast]);
+
+  // Function to reload project data (for use after GitHub issue imports)
+  const reloadProjectData = async () => {
+    if (!id) return;
+    
+    try {
+      const projectData = await fetchProjectById(id);
+      
+      if (!projectData) {
+        console.error("Project not found");
+        return;
+      }
+      
+      // Convert from Supabase format to our app format
+      const formattedProject: Project = {
+        id: projectData.id,
+        title: projectData.title,
+        description: projectData.description || "",
+        status: projectData.status,
+        priority: projectData.priority,
+        techStack: projectData.tech_stack || [],
+        githubUrl: projectData.github_url || "",
+        deploymentUrl: projectData.deployment_url || "",
+        githubRepoOwner: projectData.github_repo_owner || "",
+        githubRepoName: projectData.github_repo_name || "",
+        githubWebhookId: projectData.github_webhook_id || null,
+        githubSyncEnabled: projectData.github_sync_enabled || false,
+        tasks: Array.isArray(projectData.tasks) 
+          ? projectData.tasks.map((task: any) => ({
+              id: task.id,
+              title: task.title,
+              description: task.description || "",
+              completed: task.completed || false,
+              dueDate: task.due_date || null,
+              createdAt: task.created_at,
+              githubIssueUrl: task.github_issue_url || null,
+              githubIssueNumber: task.github_issue_number || null,
+              githubSyncEnabled: task.github_sync_enabled || false,
+            })) 
+          : [],
+        createdAt: projectData.created_at,
+        updatedAt: projectData.updated_at
+      };
+      
+      setProject(formattedProject);
+      toast({
+        title: "GitHub issues imported",
+        description: "Your tasks have been refreshed with the imported GitHub issues.",
+      });
+    } catch (error) {
+      console.error("Error reloading project:", error);
+      toast({
+        title: "Error refreshing project",
+        description: "Could not refresh the project data after importing issues.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDeleteProjectClick = async () => {
     if (!project) return;
@@ -484,12 +550,23 @@ const ProjectDetail = () => {
               </CardContent>
             </Card>
             
-            <TasksList
-              tasks={project.tasks}
-              onAddTask={handleAddTask}
-              onToggleTask={handleToggleTask}
-              onDeleteTask={handleDeleteTask}
-            />
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Tasks</h2>
+              <TasksList 
+                tasks={project.tasks}
+                onAddTask={handleAddTask}
+                onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
+              />
+            </div>
+            
+            {/* GitHub Issues Integration */}
+            <div className="mt-8">
+              <GitHubIssuesList 
+                project={project} 
+                onIssuesImported={reloadProjectData} 
+              />
+            </div>
           </div>
           
           {/* Sidebar */}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,12 +22,58 @@ import { useAuth } from "@/lib/auth-context";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { signIn, signUp, signInWithGitHub } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
+
+  // Check for access token in URL hash at the beginning of the component
+  useEffect(() => {
+    const checkForAuthTokens = async () => {
+      // Check URL hash for tokens (fragment identifier approach)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      // Check for tokens in the hash
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (accessToken) {
+        console.log('Found access token in URL fragment, handling authentication...');
+        
+        try {
+          // Set the session with the tokens from the URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            throw error;
+          }
+          
+          toast({
+            title: "Successfully authenticated",
+            description: "You have been logged in via GitHub.",
+          });
+          
+          // Redirect to dashboard
+          navigate("/dashboard", { replace: true });
+        } catch (error: any) {
+          console.error("Error setting session from URL tokens:", error);
+          toast({
+            title: "Authentication failed",
+            description: error.message || "Failed to authenticate with the provided tokens.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    checkForAuthTokens();
+  }, [navigate, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

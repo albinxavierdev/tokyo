@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { getGitHubRedirectUrl } from './utils';
 
 type AuthContextType = {
   user: User | null;
@@ -75,10 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   
   const signInWithGitHub = async () => {
+    // Use the utility function to get the appropriate redirect URL
+    const redirectUrl = getGitHubRedirectUrl();
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: redirectUrl,
+        scopes: 'repo admin:repo_hook read:user user:email',
       },
     });
     if (error) throw error;

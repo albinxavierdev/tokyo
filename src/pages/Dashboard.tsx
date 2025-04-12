@@ -14,6 +14,7 @@ import Footer from "@/components/layout/Footer";
 import { fetchProjects } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from 'uuid';
+import GitHubIntegrationSection from "@/components/github/GitHubIntegrationSection";
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,6 +134,10 @@ const Dashboard = () => {
               className="pl-10 max-w-sm"
             />
           </div>
+        </div>
+        
+        <div className="mb-8">
+          <GitHubIntegrationSection />
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
