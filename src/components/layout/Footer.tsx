@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Github } from "lucide-react";
 
@@ -7,8 +6,8 @@ export const Footer = () => {
     <footer className="border-t border-border py-6 px-4 bg-background">
       <div className="container max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
         <div className="flex items-center space-x-2 mb-4 md:mb-0">
-          <span className="text-xl">🚀</span>
-          <span className="font-semibold">ProjectPilot</span>
+          <span className="text-xl">🗼</span>
+          <span className="font-semibold">Tokyo</span>
         </div>
         
         <div className="flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-6">
@@ -32,7 +31,7 @@ export const Footer = () => {
         </div>
         
         <div className="mt-4 md:mt-0 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} ProjectPilot
+          © {new Date().getFullYear()} Tokyo
         </div>
       </div>
     </footer>

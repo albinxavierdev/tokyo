@@ -1,5 +1,4 @@
-
-import { Check, Layout, Calendar, Tag, Github, LucideIcon } from "lucide-react";
+import { Check, Layout, Calendar, Tag, Github, LucideIcon, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FeatureCardProps {
@@ -30,7 +29,7 @@ export const FeatureSection = () => {
     <section id="features" className="py-16 md:py-24 px-4">
       <div className="container max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Everything you need. Nothing you don't.</h2>
+          <h2 className="text-3xl font-bold mb-4">Navigate your projects with Tokyo</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Simple tools for tracking your indie projects without the bloat of enterprise management software.
           </p>
@@ -63,9 +62,9 @@ export const FeatureSection = () => {
             icon={Github}
           />
           <FeatureCard
-            title="Fast & Responsive"
-            description="Works beautifully on desktop, tablet, and mobile devices."
-            icon={Layout}
+            title="Global Access"
+            description="Works beautifully on desktop, tablet, and mobile devices from anywhere."
+            icon={MapPin}
           />
         </div>
       </div>

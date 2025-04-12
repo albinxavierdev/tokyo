@@ -8,6 +8,7 @@ type AuthContextType = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGitHub: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 };
@@ -25,6 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // If user exists, store in localStorage for backward compatibility
+      if (session?.user) {
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            id: session.user.id,
+            email: session.user.email,
+          })
+        );
+      }
     });
 
     // Listen for auth changes
@@ -33,6 +45,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Update localStorage on auth changes
+        if (session?.user) {
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              id: session.user.id,
+              email: session.user.email,
+            })
+          );
+        } else {
+          localStorage.removeItem("user");
+        }
       }
     );
 
@@ -48,10 +73,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
   };
+  
+  const signInWithGitHub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    if (error) throw error;
+  };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Clean up localStorage
+    localStorage.removeItem("user");
   };
 
   const resetPassword = async (email: string) => {
@@ -67,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn,
     signUp,
+    signInWithGitHub,
     signOut,
     resetPassword,
   };

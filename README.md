@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Welcome to Tokyo
 
 ## Project info
 
@@ -114,3 +114,40 @@ Yes it is!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+# Tokyo
+
+## Setting up GitHub Authentication with Supabase
+
+To enable GitHub authentication in this application, follow these steps:
+
+### 1. Create a GitHub OAuth App
+
+1. Go to your GitHub account settings
+2. Navigate to **Developer settings** > **OAuth Apps** > **New OAuth App**
+3. Fill in the following details:
+   - **Application name**: Tokyo (or your preferred name)
+   - **Homepage URL**: Your application's homepage URL (e.g., http://localhost:5173)
+   - **Authorization callback URL**: Your Supabase redirect URL (https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback)
+4. Click **Register application**
+5. Note down the **Client ID**
+6. Generate a new **Client Secret** and note it down
+
+### 2. Configure Supabase Authentication
+
+1. Go to your Supabase project dashboard
+2. Navigate to **Authentication** > **Providers**
+3. Find **GitHub** in the list and enable it
+4. Enter the **Client ID** and **Client Secret** from the GitHub OAuth App
+5. Save the changes
+
+### 3. Configure Redirect URLs
+
+1. In your Supabase dashboard, go to **Authentication** > **URL Configuration**
+2. Add your application URL (e.g., http://localhost:5173) to the **Site URL**
+3. Add any additional redirect URLs as needed
+4. Save the changes
+
+Now you should be able to sign in with GitHub using the buttons in the login page.
+
+## Original Project Documentation
