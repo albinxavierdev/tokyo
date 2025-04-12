@@ -1,10 +1,9 @@
-
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Project } from "@/lib/types";
 import { ProjectStatusBadge } from "./ProjectStatusBadge";
 import { TechBadge } from "./TechBadge";
-import { CalendarDays, CheckCircle, CircleX } from "lucide-react";
+import { CalendarDays, CheckCircle, XCircle } from "lucide-react";
 
 interface ProjectCardProps {
   project: Project;
@@ -67,7 +66,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               <span>{completedTasks}</span>
             </div>
             <div className="flex items-center">
-              <CircleX size={14} className="mr-1 text-red-500" />
+              <XCircle size={14} className="mr-1 text-red-500" />
               <span>{totalTasks - completedTasks}</span>
             </div>
           </div>
