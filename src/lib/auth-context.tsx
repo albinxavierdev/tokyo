@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: 'github',
       options: {
         redirectTo: redirectUrl,
-        scopes: 'repo admin:repo_hook read:user user:email',
+        // Remove additional scopes since we're not using GitHub API integration
       },
     });
     if (error) throw error;

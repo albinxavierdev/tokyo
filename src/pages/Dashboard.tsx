@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { statusOptions } from "@/lib/mock-data";
 import { Project, ProjectStatus } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { PlusCircle, SearchIcon, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchProjects } from "@/lib/api";
+import ProjectCard from "@/components/projects/ProjectCard";
 import Navbar from "@/components/layout/Navbar";
 import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
 import ProjectGrid from "@/components/projects/ProjectGrid";
 import Footer from "@/components/layout/Footer";
-import { fetchProjects } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from 'uuid';
-import GitHubIntegrationSection from "@/components/github/GitHubIntegrationSection";
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,10 +134,6 @@ const Dashboard = () => {
               className="pl-10 max-w-sm"
             />
           </div>
-        </div>
-        
-        <div className="mb-8">
-          <GitHubIntegrationSection />
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
