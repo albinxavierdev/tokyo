@@ -117,7 +117,7 @@ Unit and integration testing will be added using:
 
 ## 🌐 Live Demo
 
-Check out the live version: https://tokyo-swart.vercel.app
+Check out the live version: https://tokyodev.vercel.app
 
 ---
 
